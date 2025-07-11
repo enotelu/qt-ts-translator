@@ -1,0 +1,10 @@
+Outils QtTools :
+
+
+cd C:\Users\C.Udressy\Desktop\thibault\05 - qttools
+
+Version compiler (.qm) vers version décompiler (.ts) :
+lconvert.exe deltaqin_en.qm -o deltaqin_fr.ts
+
+Version décompiler (.ts) vers version compiler (.qm) :
+lrelease.exe deltaqin_fr.ts -qm deltaqin_en.qm
