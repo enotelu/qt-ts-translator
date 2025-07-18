@@ -79,7 +79,7 @@ class TranslatorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("DeltaQin Translate")
-        self.root.geometry("900x600")
+        self.root.geometry("900x700")
         self.setup_ui()
         self.current_process = None
         self.was_cancelled = False
@@ -91,6 +91,7 @@ class TranslatorApp:
 
         title_label = Label(main_frame, text="DeltaQin Translator", font=("Segoe UI", 18, "bold"))
         title_label.pack(pady=(0, 15))
+
 
         file_frame = tk.Frame(main_frame)
         file_frame.pack(fill="x", pady=(0, 10))
@@ -120,10 +121,24 @@ class TranslatorApp:
         progress_frame = tk.Frame(main_frame, bg="#2b2b2b")
         progress_frame.pack(fill="x", pady=(0, 10))
 
-        self.eta_label = Label(progress_frame, text="Temps restant : --:--", font=("Segoe UI", 10), foreground="#CCCCCC")
+        # Frame pour regrouper la barre de progression et le label de pourcentage
+        progress_bar_frame = tk.Frame(progress_frame, bg="#2b2b2b")
+        progress_bar_frame.pack(expand=True, fill="both")
+
+        self.eta_label = Label(progress_bar_frame, text="Temps restant : --:--", font=("Segoe UI", 10), foreground="#CCCCCC")
         self.eta_label.pack(anchor="center")
-        self.progress = ttk.Progressbar(progress_frame, orient="horizontal", length=400, mode="determinate")
-        self.progress.pack(anchor="center")
+
+        self.progress = ttk.Progressbar(progress_bar_frame, orient="horizontal", mode="determinate")
+        self.progress.pack(fill="x", padx=10, pady=(0, 10))
+
+        # Frame pour le label de pourcentage
+        progress_label_frame = tk.Frame(progress_bar_frame, bg="#2b2b2b")
+        progress_label_frame.pack(fill="x")
+
+        self.progress_label = tk.Label(progress_label_frame, text="", font=("Segoe UI", 10), fg="#FFFFFF", bg="#2b2b2b")
+        self.progress_label.pack(side="right", padx=10)
+
+
 
         action_frame = tk.Frame(main_frame)
         action_frame.pack(pady=(5, 0))
@@ -152,6 +167,19 @@ class TranslatorApp:
 
         self.lang_frame.pack_forget()  # Reste cachée tant qu’aucun fichier n’est sélectionné
 
+        logo_path = get_resource_path("logo_lemtronic2.png")
+        logo_image = tk.PhotoImage(file=logo_path)
+
+        # Réduire la taille de l'image
+        subsample_factor = 18  # Ajustez ce facteur selon vos besoins
+        logo_image = logo_image.subsample(subsample_factor, subsample_factor)
+
+        logo_label = tk.Label(main_frame, image=logo_image, bg="#2b2b2b")
+        logo_label.image = logo_image  # Garde une référence pour éviter la garbage collection
+        logo_label.place(relx=1.0, x=15, y=-15, anchor="ne")  # Positionnement en haut à droite
+        logo_label.lift()  # Amener le logo au premier plan
+
+
 
     def cancel_translation(self):
         if self.current_process and self.current_process.poll() is None:
@@ -160,7 +188,6 @@ class TranslatorApp:
                 self.current_process.terminate()
                 self.status_var.set("Traduction annulée par l'utilisateur.")
                 self.console_text.insert(tk.END, "\n[INFO] Traduction annulée par l'utilisateur.\n")
-                self.progress["value"] = 0
                 self.console_text.see(tk.END)
             except Exception as e:
                 self.console_text.insert(tk.END, f"\n[ERREUR] Impossible d'annuler : {e}\n")
@@ -202,7 +229,7 @@ class TranslatorApp:
     def show_info(self):
         info_win = tk.Toplevel(self.root)
         info_win.title("À propos")
-        info_win.geometry("500x600")
+        info_win.geometry("500x800")
         info_win.transient(self.root)
         info_win.grab_set()
         info_win.iconbitmap("logo_lemtronic.ico")
@@ -293,7 +320,6 @@ class TranslatorApp:
             if not os.path.exists(python_path):
                 python_path = "python"
 
-            # Vérifie si un dictionnaire personnalisé existe pour la langue
             base_path = get_base_path()
             dict_path = os.path.join(base_path, f"dictionnaire_{lang}.py")
             dict_exists = os.path.isfile(dict_path)
@@ -302,35 +328,62 @@ class TranslatorApp:
             if dict_exists:
                 command.append(f"dictionnaire_{lang}.py")
 
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       bufsize=1, universal_newlines=True, encoding="utf-8",
-                                       errors="replace", creationflags=subprocess.CREATE_NO_WINDOW)
-
-
+            # ✅ Lancement du process AVEC stderr séparé
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=1,
+                universal_newlines=True,
+                encoding="utf-8",
+                errors="replace",
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
             self.current_process = process
 
-            for line in iter(process.stdout.readline, ''):
-                if "[PROGRESS]" in line:
-                    try:
-                        percent = int(line.strip().split()[1])
-                        self.progress["value"] = percent
-                    except:
-                        pass
-                elif "[ETA]" in line:
-                    try:
-                        eta_text = line.strip().split("]", 1)[1].strip()
-                        self.eta_label.config(text=f"ETA : {eta_text}")
-                    except:
-                        pass
+            # ✅ Fonction pour lire stdout (affiché dans la console)
+            def read_stdout():
+                self.progress_label.config(text="0 %")
+                for line in iter(process.stdout.readline, ''):
+                    if line:
+                        self.console_text.insert(tk.END, line)
+                        self.console_text.see(tk.END)
+                        self.root.update()
+                process.stdout.close()
+
+            # ✅ Fonction pour lire stderr (progression + ETA uniquement)
+            def read_stderr():
+                for line in iter(process.stderr.readline, ''):
+                    if "[PROGRESS]" in line:
+                        try:
+                            percent = int(line.strip().split()[1])
+                            self.progress["value"] = percent
+                            self.progress_label.config(text=f"{percent} %")
+                        except:
+                            pass
 
 
-                if line:
-                    self.console_text.insert(tk.END, line)
-                    self.console_text.see(tk.END)
+                    elif "[ETA_SECONDS]" in line:
+                        try:
+                            seconds = int(line.strip().split()[1])
+                            minutes, sec = divmod(seconds, 60)
+                            self.eta_label.config(text=f"Temps restant : {minutes} min {sec} s")
+                        except:
+                            pass
+
                     self.root.update()
 
-            process.stdout.close()
+
+            # ✅ Lancement des threads de lecture
+            t_out = threading.Thread(target=read_stdout, daemon=True)
+            t_err = threading.Thread(target=read_stderr, daemon=True)
+            t_out.start()
+            t_err.start()
+
             process.wait()
+            t_out.join()
+            t_err.join()
+
             self.current_process = None
             self.cancel_btn.config(state="disabled")
 
@@ -341,8 +394,8 @@ class TranslatorApp:
             if process.returncode == 0:
                 self.status_var.set("Traduction terminée avec succès.")
                 self.flash_status_label(times=8, interval=600, flash_color="#00FF00", default_color="#FFFFFF")
+                self.progress_label.config(text="")
                 self.progress["value"] = 0
-
                 self.open_output_folder()
             else:
                 self.status_var.set("Erreur lors de la traduction.")
@@ -351,6 +404,7 @@ class TranslatorApp:
         except Exception as e:
             self.status_var.set("Erreur d'exécution.")
             self.root.after(0, lambda: Messagebox.show_error("Erreur", f"Erreur d'exécution du script :\n{e}"))
+
 
     def open_output_folder(self):
         base_path = get_base_path()

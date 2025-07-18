@@ -120,7 +120,8 @@ for message in root.iter('message'):
         eta_seconds = int(ema_time_per_msg * remaining)
 
         eta_min, eta_sec = divmod(eta_seconds, 60)
-        print(f"[ETA] {eta_min:02d}:{eta_sec:02d}", file=sys.stderr)
+        print(f"[ETA_SECONDS] {eta_seconds}", file=sys.stderr)
+
 
 
     source = message.find('source')
