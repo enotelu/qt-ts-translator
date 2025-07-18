@@ -7,6 +7,23 @@ import subprocess
 import threading
 import datetime
 import sys
+from tkinter import ttk  # Ajout nécessaire pour la liste déroulante
+import importlib.util     # Pour tester l'existence d'un dictionnaire
+import threading
+
+# Langues supportées : nom affiché → code Google Translate
+LANGUAGES = {
+    "Français": "fr",
+    "Anglais": "en",
+    "Allemand": "de",
+    "Italien": "it",
+    "Espagnol": "es",
+    "Japonais": "ja",
+    "Coréen": "ko",
+    "Vietnamien": "vi",
+    "Russe": "ru",
+    "Arabe": "ar"
+}
 
 def get_resource_path(filename):
     if hasattr(sys, '_MEIPASS'):
@@ -62,7 +79,7 @@ class TranslatorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("DeltaQin Translate")
-        self.root.geometry("800x600")
+        self.root.geometry("900x600")
         self.setup_ui()
         self.current_process = None
         self.was_cancelled = False
@@ -78,7 +95,7 @@ class TranslatorApp:
         file_frame = tk.Frame(main_frame)
         file_frame.pack(fill="x", pady=(0, 10))
 
-        self.label = Label(file_frame, text="Fichier .ts à traduire :", font=("Segoe UI", 12))
+        self.label = Label(file_frame, text="Fichier .qm à traduire :", font=("Segoe UI", 12))
         self.label.pack(side="left", padx=(0, 10))
 
         self.choose_btn = Button(file_frame, text="Sélectionner un fichier", command=self.choose_file)
@@ -99,6 +116,15 @@ class TranslatorApp:
         self.status_label = Label(main_frame, textvariable=self.status_var, anchor="w", font=("Segoe UI", 10), bootstyle="info")
         self.status_label.pack(fill="x", pady=(10, 5))
 
+        # Progression avec ETA
+        progress_frame = tk.Frame(main_frame, bg="#2b2b2b")
+        progress_frame.pack(fill="x", pady=(0, 10))
+
+        self.eta_label = Label(progress_frame, text="Temps restant : --:--", font=("Segoe UI", 10), foreground="#CCCCCC")
+        self.eta_label.pack(anchor="center")
+        self.progress = ttk.Progressbar(progress_frame, orient="horizontal", length=400, mode="determinate")
+        self.progress.pack(anchor="center")
+
         action_frame = tk.Frame(main_frame)
         action_frame.pack(pady=(5, 0))
 
@@ -114,6 +140,19 @@ class TranslatorApp:
         self.open_folder_btn = Button(action_frame, text="Ouvrir dossier", bootstyle="success", command=self.open_output_folder)
         self.open_folder_btn.pack(side="right", padx=5)
 
+        # Liste déroulante pour la langue (initialement cachée)
+        self.lang_frame = tk.Frame(file_frame)  # Attachée à file_frame pour être à droite du bouton
+        self.lang_label = Label(self.lang_frame, text="Langue cible :", font=("Segoe UI", 12))
+        self.lang_label.pack(side="left", padx=(10, 5))
+
+        self.lang_var = tk.StringVar()
+        self.lang_dropdown = ttk.Combobox(self.lang_frame, textvariable=self.lang_var, state="readonly", width=15)
+        self.lang_dropdown['values'] = list(LANGUAGES.keys())  # Affiche les noms complets
+        self.lang_dropdown.pack(side="left")
+
+        self.lang_frame.pack_forget()  # Reste cachée tant qu’aucun fichier n’est sélectionné
+
+
     def cancel_translation(self):
         if self.current_process and self.current_process.poll() is None:
             try:
@@ -121,6 +160,7 @@ class TranslatorApp:
                 self.current_process.terminate()
                 self.status_var.set("Traduction annulée par l'utilisateur.")
                 self.console_text.insert(tk.END, "\n[INFO] Traduction annulée par l'utilisateur.\n")
+                self.progress["value"] = 0
                 self.console_text.see(tk.END)
             except Exception as e:
                 self.console_text.insert(tk.END, f"\n[ERREUR] Impossible d'annuler : {e}\n")
@@ -145,11 +185,24 @@ class TranslatorApp:
             self.root.quit()
 
 
+    def flash_status_label(self, times=6, interval=500, flash_color="#4BB543", default_color="#FFFFFF"):
+        def toggle(count, is_on):
+            if count <= 0:
+                self.status_label.config(foreground=default_color)
+                return
+
+            self.status_label.config(foreground=flash_color if is_on else default_color)
+            self.root.after(interval, toggle, count - 1, not is_on)
+
+        toggle(times, True)
+
+
+
 
     def show_info(self):
         info_win = tk.Toplevel(self.root)
         info_win.title("À propos")
-        info_win.geometry("400x500")
+        info_win.geometry("500x600")
         info_win.transient(self.root)
         info_win.grab_set()
         info_win.iconbitmap("logo_lemtronic.ico")
@@ -175,15 +228,22 @@ class TranslatorApp:
         info_text.pack(fill="both", expand=True)
         scrollbar.config(command=info_text.yview)
 
+
         content = (
             "DeltaQin Translator\n\n"
-            "Ce programme permet de traduire du chinois au français automatiquement les fichiers .qm décompiler en .ts\n\n"
+            "Ce programme permet de traduire automatiquement les fichiers .qm (format compilé Qt Linguist) depuis le chinois vers une langue cible (par défaut : le français).\n\n"
             "Fonctionnement :\n"
-            "- Utilise `translate.py` et l'API GoogleTranslate pour traduire le fichier .ts\n"
-            "- Utilise un dictionnaire custom (`dictionnaire.py`)\n"
-            "- Génère un nouveau fichier .ts traduit, et un fichier .qm compilé\n\n"
-            "Auteur : T. LAVAL / Lemtronic SA"
+            "1. Décompilation du fichier .qm en .ts avec `lconvert.exe`\n"
+            "2. Traduction automatique du fichier .ts avec l'API Google Translate\n"
+            "3. Utilisation d'un dictionnaire local personnalisé (`dictionnaire_xx.py`) pour corriger ou améliorer certaines traductions\n"
+            "4. Compilation du fichier .ts traduit en .qm avec `lrelease.exe`\n\n"
+            "Les fichiers temporaires sont gérés automatiquement dans un dossier 'temp'.\n"
+            "Les fichiers finaux sont enregistrés dans le dossier 'translated_files'.\n\n"
+            "Auteur : T. LAVAL / Lemtronic SA\n"
+            "Date : Stage mai / juillet 2025"
         )
+
+
         info_text.insert("1.0", content)
         info_text.config(state="disabled")
 
@@ -191,36 +251,79 @@ class TranslatorApp:
         btn_close.pack(pady=10)
 
     def choose_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("TS Files", "*.ts")])
+        file_path = filedialog.askopenfilename(filetypes=[("QM Files", "*.qm")])
         if file_path:
-            confirm = custom_confirm(self.root, "Confirmation", f"Voulez-vous traduire ce fichier ?\n\n{file_path}")
+            self.selected_file = file_path
+            self.lang_frame.pack(side="left", padx=(10, 0)) # Affiche la liste déroulante après sélection
+
+            self.status_var.set("Sélectionnez la langue cible.")
+
+            # Lancement de la traduction quand une langue est choisie
+            self.lang_dropdown.bind("<<ComboboxSelected>>", self.on_language_selected)
+
+    def on_language_selected(self, event=None):
+        if hasattr(self, 'selected_file') and self.lang_var.get():
+            selected_name = self.lang_var.get()
+            lang = LANGUAGES.get(selected_name)
+            if not lang:
+                self.append_text("❌ Veuillez sélectionner une langue valide.\n")
+                return
+
+            confirm = custom_confirm(self.root, "Confirmation",
+                                    f"Voulez-vous traduire le fichier en {lang.upper()} ?\n\n{self.selected_file}")
             if confirm:
                 self.console_text.delete("1.0", tk.END)
-                thread = threading.Thread(target=self.run_translation, args=(file_path,))
+                thread = threading.Thread(target=self.run_translation, args=(self.selected_file, lang))
                 thread.start()
             else:
                 self.status_var.set("Traduction annulée par l'utilisateur.")
+            self.lang_frame.pack_forget()  # Cache après sélection
 
-    def run_translation(self, ts_path):
+    def run_translation(self, ts_path, lang="fr"):
         try:
+            self.cancel_btn.config(state="normal")
+            self.was_cancelled = False
             self.status_var.set("Traduction en cours…")
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            output_ts = f"deltaqin_traduit_{timestamp}.ts"
-            output_qm = f"deltaqin_fr_{timestamp}.qm"
+            output_ts = f"deltaqin_{lang}_{timestamp}.ts"
+            output_qm = f"deltaqin_{lang}_{timestamp}.qm"
             script_path = get_resource_path("translate.py")
 
             python_path = os.path.join(os.environ.get('VIRTUAL_ENV', ''), 'Scripts', 'python.exe')
             if not os.path.exists(python_path):
                 python_path = "python"
 
-            command = [python_path, script_path, ts_path, output_ts, output_qm]
+            # Vérifie si un dictionnaire personnalisé existe pour la langue
+            base_path = get_base_path()
+            dict_path = os.path.join(base_path, f"dictionnaire_{lang}.py")
+            dict_exists = os.path.isfile(dict_path)
+
+            command = [python_path, script_path, ts_path, lang]
+            if dict_exists:
+                command.append(f"dictionnaire_{lang}.py")
+
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                        bufsize=1, universal_newlines=True, encoding="utf-8",
                                        errors="replace", creationflags=subprocess.CREATE_NO_WINDOW)
 
+
             self.current_process = process
 
             for line in iter(process.stdout.readline, ''):
+                if "[PROGRESS]" in line:
+                    try:
+                        percent = int(line.strip().split()[1])
+                        self.progress["value"] = percent
+                    except:
+                        pass
+                elif "[ETA]" in line:
+                    try:
+                        eta_text = line.strip().split("]", 1)[1].strip()
+                        self.eta_label.config(text=f"ETA : {eta_text}")
+                    except:
+                        pass
+
+
                 if line:
                     self.console_text.insert(tk.END, line)
                     self.console_text.see(tk.END)
@@ -237,6 +340,9 @@ class TranslatorApp:
 
             if process.returncode == 0:
                 self.status_var.set("Traduction terminée avec succès.")
+                self.flash_status_label(times=8, interval=600, flash_color="#00FF00", default_color="#FFFFFF")
+                self.progress["value"] = 0
+
                 self.open_output_folder()
             else:
                 self.status_var.set("Erreur lors de la traduction.")
