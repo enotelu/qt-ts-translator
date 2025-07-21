@@ -16,6 +16,8 @@ start_time = time.time()
 
 print = functools.partial(print, flush=True)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Force l'encodage en UTF-8 pour stdout et stderr
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
@@ -38,8 +40,10 @@ output_qm_filename = f'deltaqin_{target_lang}_{timestamp}.qm'
 base_name = os.path.splitext(os.path.basename(input_qm_file))[0]
 
 # Dossiers
-qttools_dir = r"C:\Users\C.Udressy\Desktop\thibault\05 - qttools"
-translated_dir = r"C:\Users\C.Udressy\Desktop\thibault\04 - VSC\translated_files"
+#qttools_dir = r"C:\Users\C.Udressy\Desktop\thibault\05 - qttools"
+qttools_dir = os.path.join(BASE_DIR, "qttools")
+#translated_dir = r"C:\Users\C.Udressy\Desktop\thibault\04 - VSC\translated_files"
+translated_dir = os.path.join(BASE_DIR, "translated_files")
 os.makedirs(translated_dir, exist_ok=True)
 
 temp_dir = os.path.join(qttools_dir, "temp")
@@ -64,6 +68,8 @@ source_ts_temp = os.path.join(temp_dir, output_ts_filename)
 source_qm_temp = os.path.join(temp_dir, output_qm_filename)
 final_ts_path = os.path.join(translated_dir, output_ts_filename)
 final_qm_path = os.path.join(translated_dir, output_qm_filename)
+
+sys.path.insert(0, BASE_DIR)
 
 # Chargement du dictionnaire de traduction s'il existe
 manual_dict = {}

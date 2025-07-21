@@ -393,7 +393,7 @@ class TranslatorApp:
 
             if process.returncode == 0:
                 self.status_var.set("Traduction terminée avec succès.")
-                self.flash_status_label(times=8, interval=600, flash_color="#00FF00", default_color="#FFFFFF")
+                self.flash_status_label(times=15, interval=800, flash_color="#00FF00", default_color="#FFFFFF")
                 self.progress_label.config(text="")
                 self.progress["value"] = 0
                 self.open_output_folder()
