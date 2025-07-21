@@ -16,11 +16,7 @@ LANGUAGES = {
     "Allemand": "de",
     "Italien": "it",
     "Espagnol": "es",
-    "Japonais": "ja",
-    "Coréen": "ko",
-    "Vietnamien": "vi",
-    "Russe": "ru",
-    "Arabe": "ar"
+    "Japonais": "ja"
 }
 
 def get_resource_path(filename):
@@ -110,12 +106,13 @@ class TranslatorApp:
 
         # Bouton pour sélectionner un dictionnaire (initialement caché)
         self.dict_frame = tk.Frame(selection_frame)
-        dict_button = Button(self.dict_frame, text="Sélectionner un dictionnaire", command=self.select_dictionnaire)
-        dict_button.pack(side="left")
+        self.dict_button = Button(self.dict_frame, text="Sélectionner un dictionnaire", command=self.select_dictionnaire)
+        self.dict_button.pack(side="left")
 
         self.dict_label = Label(self.dict_frame, text="Aucun fichier sélectionné", font=("Segoe UI", 10))
         self.dict_label.pack(side="left", padx=(10, 0))
         self.dict_frame.pack_forget()
+
 
         self.lang_frame.pack_forget()
 
@@ -180,8 +177,18 @@ class TranslatorApp:
         logo_label.lift()
 
 
+    def reset_ui_to_initial_state(self):
+        # Réinitialisation des éléments visuels
+        self.status_var.set("Prêt")
 
+        # Boutons et champs
+        self.choose_btn.config(state='normal')
+        self.confirm_btn.config(state='disabled')
+        self.cancel_btn.config(state='disabled')
 
+        # Masquer les éléments
+        self.lang_frame.pack_forget()
+        self.dict_frame.pack_forget()
 
 
     def cancel_translation(self):
@@ -196,6 +203,7 @@ class TranslatorApp:
                 self.console_text.insert(tk.END, f"\n[ERREUR] Impossible d'annuler : {e}\n")
             finally:
                 self.cancel_btn.config(state="disabled")
+                self.reset_ui_to_initial_state()
 
     def safe_quit(self):
         if self.current_process and self.current_process.poll() is None:
@@ -220,6 +228,7 @@ class TranslatorApp:
             self.status_label.config(foreground=flash_color if is_on else default_color)
             self.root.after(interval, toggle, count - 1, not is_on)
         toggle(times, True)
+
 
     def show_info(self):
         info_win = tk.Toplevel(self.root)
@@ -394,9 +403,11 @@ class TranslatorApp:
                 self.progress_label.config(text="")
                 self.progress["value"] = 0
                 self.open_output_folder()
+                self.reset_ui_to_initial_state()
             else:
                 self.status_var.set("Erreur lors de la traduction.")
                 self.root.after(0, lambda: Messagebox.show_error("Erreur", "Erreur durant la traduction."))
+                self.reset_ui_to_initial_state()
         except Exception as e:
             self.status_var.set("Erreur d'exécution.")
             self.root.after(0, lambda: Messagebox.show_error("Erreur", f"Erreur d'exécution du script :\n{e}"))
