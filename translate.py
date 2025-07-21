@@ -73,14 +73,24 @@ sys.path.insert(0, BASE_DIR)
 
 # Chargement du dictionnaire de traduction s'il existe
 manual_dict = {}
-try:
-    dict_module = importlib.import_module(f'dictionnaire_{target_lang}')
-    manual_dict = getattr(dict_module, 'manual_dict', {})
-    print(f"📘 Dictionnaire 'dictionnaire_{target_lang}.py' chargé ({len(manual_dict)} entrées)")
-except ModuleNotFoundError:
-    print(f"📙 Aucun dictionnaire spécifique trouvé pour la langue : {target_lang}")
-except Exception as e:
-    print(f"⚠️ Erreur lors du chargement du dictionnaire : {e}")
+# Chargement du dictionnaire depuis un fichier .txt si fourni
+if len(sys.argv) > 3:
+    dict_module_path = sys.argv[3]
+    try:
+        spec = importlib.util.spec_from_file_location("manual_dict_module", dict_module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # On attend un attribut 'manual_dict' dans le fichier
+        if hasattr(module, "manual_dict"):
+            manual_dict = module.manual_dict
+            print(f"📘 Dictionnaire Python chargé depuis '{dict_module_path}' ({len(manual_dict)} entrées)")
+        else:
+            print(f"⚠️ Le fichier '{dict_module_path}' ne contient pas de variable 'manual_dict'")
+    except Exception as e:
+        print(f"❌ Erreur de lecture du dictionnaire Python : {e}")
+else:
+    print(f"📙 Aucun dictionnaire fourni, traduction automatique uniquement")
 
 def count_total_messages(ts_path):
     try:
