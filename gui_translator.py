@@ -116,7 +116,7 @@ class TranslatorApp:
 
         self.lang_frame.pack_forget()
 
-        self.confirm_btn = Button(main_frame, text="Confirmer et traduire", command=self.confirm_translation, state="disabled")
+        self.confirm_btn = Button(main_frame, text="Confirmer et traduire", bootstyle="success", command=self.confirm_translation, state="disabled")
         self.confirm_btn.pack(pady=(10, 0))
 
         console_frame = tk.Frame(main_frame)
@@ -233,7 +233,7 @@ class TranslatorApp:
     def show_info(self):
         info_win = tk.Toplevel(self.root)
         info_win.title("À propos")
-        info_win.geometry("500x800")
+        info_win.geometry("900x800")
         info_win.transient(self.root)
         info_win.grab_set()
         info_win.iconbitmap("logo_lemtronic.ico")
@@ -242,7 +242,7 @@ class TranslatorApp:
         root_y = self.root.winfo_rooty()
         root_w = self.root.winfo_width()
         root_h = self.root.winfo_height()
-        win_w = 400
+        win_w = 520
         win_h = 500
         pos_x = root_x + (root_w // 2) - (win_w // 2)
         pos_y = root_y + (root_h // 2) - (win_h // 2)
@@ -288,6 +288,7 @@ class TranslatorApp:
     def on_language_selected(self, event=None):
         if hasattr(self, 'selected_file') and self.lang_var.get():
             self.dict_frame.pack(side="left", padx=(10, 0))
+            self.status_var.set("Sélectionnez un dictionnaire.")
 
     def select_dictionnaire(self):
         dico_dir = get_resource_path("dico")
@@ -299,6 +300,7 @@ class TranslatorApp:
         if file_path:
             self.dictionnaire_path = file_path
             self.dict_label.config(text=os.path.basename(file_path))
+            self.status_var.set("Confirmer pour démarrer la traduction.")
         else:
             self.dictionnaire_path = None
             self.dict_label.config(text="Aucun fichier sélectionné")
@@ -311,7 +313,7 @@ class TranslatorApp:
                 self.console_text.insert(tk.END, "❌ Veuillez sélectionner une langue valide.\n")
                 return
             confirm = custom_confirm(self.root, "Confirmation",
-                                    f"Voulez-vous traduire le fichier en {lang.upper()} ?\n\n{self.selected_file}")
+                                    f"Voulez-vous traduire le fichier en {selected_name} ?\n\n{self.selected_file}")
             if confirm:
                 self.console_text.delete("1.0", tk.END)
                 thread = threading.Thread(target=self.run_translation, args=(self.selected_file, lang))
