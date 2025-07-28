@@ -46,3 +46,35 @@ Le fichier traduit sera enregistré dans le dossier `translated_files`.
 Tu peux fournir un fichier texte avec des traductions spécifiques à appliquer après Google Translate.  
 Format attendu (une ligne par paire) :
 
+原文 | Traduction souhaitée
+启动 | Démarrer
+停止 | Arrêter
+
+L’outil remplacera automatiquement les chaînes correspondantes.
+
+---
+
+## 📦 Contenu fourni
+
+DeltaQin_Translator.exe ← Exécutable prêt à l’emploi
+translated_files/ ← Dossier de sortie des fichiers traduits
+dictionnaire_fr.txt ← (Exemple de dictionnaire)
+README.md
+
+
+---
+
+## 📌 Remarques
+
+- Nécessite un accès à Internet pour utiliser Google Translate
+- Fonctionne uniquement avec des fichiers `.qm` générés via Qt Linguist
+- Compatible **Windows uniquement** (version `.exe`)
+
+---
+
+## 🧾 À propos
+
+Projet réalisé par **T. LAVAL** durant un stage chez **Lemtronic SA** (Suisse), mai – juillet 2025.
+
+Cet outil a été développé pour **traduire l’interface du logiciel DeltaQin** dans le cadre de projets industriels en robotique, où le logiciel d’origine est fourni uniquement en chinois.
+
