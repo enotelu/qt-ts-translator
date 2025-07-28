@@ -47,13 +47,9 @@ Tu peux fournir un fichier texte avec des traductions spécifiques à appliquer 
 Format attendu (une ligne par paire) :
 
     "加料时长": "Durée d'alimentation: ",
-    
     "温度": "Température: ",
-    
     "速度": "Vitesse: ",
-    
     "进料": "Chargement",
-    
     "出料": "Déchargement",
 
 L’outil remplacera automatiquement les chaînes correspondantes.
