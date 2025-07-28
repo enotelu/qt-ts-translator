@@ -46,11 +46,15 @@ Le fichier traduit sera enregistré dans le dossier `translated_files`.
 Tu peux fournir un fichier texte avec des traductions spécifiques à appliquer après Google Translate.  
 Format attendu (une ligne par paire) :
 
-原文 | Traduction souhaitée
-
-启动 | Démarrer
-
-停止 | Arrêter
+    "加料时长": "Durée d'alimentation: ",
+    
+    "温度": "Température: ",
+    
+    "速度": "Vitesse: ",
+    
+    "进料": "Chargement",
+    
+    "出料": "Déchargement",
 
 L’outil remplacera automatiquement les chaînes correspondantes.
 
