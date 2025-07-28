@@ -79,7 +79,7 @@ README.md
 
 ## 🧾 À propos
 
-Projet réalisé par **T. LAVAL** durant un stage chez **Lemtronic SA** (Suisse), mai – juillet 2025.
+Projet réalisé par **T.** durant un stage chez **Lemtronic SA** (Suisse), mai – juillet 2025.
 
 Cet outil a été développé pour **traduire l’interface du logiciel DeltaQin** dans le cadre de projets industriels en robotique, où le logiciel d’origine est fourni uniquement en chinois.
 
