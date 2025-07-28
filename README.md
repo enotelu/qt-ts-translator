@@ -47,7 +47,9 @@ Tu peux fournir un fichier texte avec des traductions spécifiques à appliquer 
 Format attendu (une ligne par paire) :
 
 原文 | Traduction souhaitée
+
 启动 | Démarrer
+
 停止 | Arrêter
 
 L’outil remplacera automatiquement les chaînes correspondantes.
@@ -57,8 +59,11 @@ L’outil remplacera automatiquement les chaînes correspondantes.
 ## 📦 Contenu fourni
 
 DeltaQin_Translator.exe ← Exécutable prêt à l’emploi
+
 translated_files/ ← Dossier de sortie des fichiers traduits
+
 dictionnaire_fr.txt ← (Exemple de dictionnaire)
+
 README.md
 
 
